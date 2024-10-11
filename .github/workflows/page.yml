@@ -27,8 +27,7 @@ jobs:
       - name: Download Trivy
         run: |
           curl -sSL https://github.com/aquasecurity/trivy/releases/download/v0.41.0/trivy_0.41.0_Linux-64bit.tar.gz -o trivy.tar.gz
-          curl -sSL https://github.com/aquasecurity/trivy/releases/download/v0.41.0/trivy_0.41.0_Linux-64bit.tar.gz.sha256 -o trivy.sha256
-          sha256sum -c trivy.sha256
+          echo "53f6ab1251ea5f25c32f63d306ad41b5c3a425924cf2632abc16368f611872e6  trivy.tar.gz" | sha256sum -c -
           tar -xzf trivy.tar.gz
           chmod +x trivy
 
