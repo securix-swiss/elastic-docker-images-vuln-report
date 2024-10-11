@@ -110,11 +110,11 @@ def mkdir_p(path):
 
 def main():
     products = [
-        'kibana'
+        'kibana',
+        'elasticsearch'
     ]
 
     all_vulns = {}
-    count = 0
     mkdir_p(TEMP_DIR)
     for product in products:
         repo = f"elastic/{product}"
@@ -126,10 +126,6 @@ def main():
             continue
 
         for release in releases:
-            count += 1
-            if count > 2:
-                continue
-
             image_name = f"docker.elastic.co/{product}/{product}:{release}"
             logging.info(f"Working on {image_name}")
 
