@@ -40,7 +40,7 @@ jobs:
         run: pip install -r data/requirements.txt
 
       - name: Get trivy data
-        run: cd data/ && TRIVY_CMD="./trivy" python run.py
+        run: cd data/ && TRIVY_CMD="../trivy" python run.py
 
       - name: Set up Yarn
         uses: actions/setup-node@v3
