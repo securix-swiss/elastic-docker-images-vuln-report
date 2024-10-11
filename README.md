@@ -1,36 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Elastic Docker Images CVE Tracker
 
-## Getting Started
+This repository provides a comprehensive report of all Common Vulnerabilities and Exposures (CVEs) discovered in official Elastic Docker images. By referencing this repository, you can easily identify which Elastic Docker image versions are affected or unaffected by specific vulnerabilities.
 
-First, run the development server:
+🔗 **View the latest CVE report here**: [Elastic Docker Images Vulnerability Report](https://securix-swiss.github.io/elastic-docker-images-vuln-report/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## How It Works
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+We regularly scan all official Elastic Docker images using [Trivy](https://github.com/aquasecurity/trivy), a powerful vulnerability scanner, and generate reports for each image.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How to Contribute
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+We welcome contributions! If you find inaccuracies, want to add new insights, or suggest improvements, feel free to open a pull request or raise an issue. We appreciate your input in helping maintain the security of Elastic Docker images.
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file.
