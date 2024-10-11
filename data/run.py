@@ -32,6 +32,22 @@ def remove_docker_image(target):
     )
     logging.info(f"Docker image '{target}' removed successfully.")
 
+def pull_docker_image(target):
+    image_present_before = is_image_present(target)
+    logging.info(f"Pulling Docker image '{target}'.")
+    r = subprocess.run(
+        ['docker', 'pull', target],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    if not image_present_before:
+        remove_docker_image(target)
+
+    if r.returncode != 0:
+        return False
+    return True
+
 def run_trivy_scan(target, trivy_executable='trivy'):
     try:
         logging.info(f"Starting Trivy scan for image '{target}'.")
@@ -128,6 +144,10 @@ def main():
         for release in releases:
             image_name = f"docker.elastic.co/{product}/{product}:{release}"
             logging.info(f"Working on {image_name}")
+
+            image_available = pull_docker_image(image_name)
+            if not image_available:
+                continue
 
             result = run_trivy_scan(image_name, trivy_executable=os.getenv('TRIVY_CMD', 'trivy'))
 
