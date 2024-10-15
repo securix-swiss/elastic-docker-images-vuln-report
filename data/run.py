@@ -49,11 +49,11 @@ def pull_docker_image(target):
         return False
     return True
 
-def download_trivy_db():
+def download_trivy_db(trivy_executable='trivy'):
     logging.info(f"Downloading Trivy DB")
     try:
         # Run the trivy db command to download the database
-        subprocess.run(['trivy', 'image', '--download-db-only'], check=True)
+        subprocess.run([trivy_executable, 'image', '--download-db-only'], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Failed to download Trivy database: {e}")
 
@@ -145,7 +145,7 @@ def main():
 
     all_vulns = {}
     mkdir_p(TEMP_DIR)
-    download_trivy_db()
+    download_trivy_db(trivy_executable=os.getenv('TRIVY_CMD', 'trivy'))
     for product in products:
         repo = f"elastic/{product}"
         logging.info(f"Processing repository '{repo}'.")
