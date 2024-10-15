@@ -3,6 +3,7 @@ import requests
 import logging
 import json
 import os
+import semantic_version
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 TEMP_DIR='results/'
@@ -48,13 +49,21 @@ def pull_docker_image(target):
         return False
     return True
 
+def download_trivy_db():
+    logging.info(f"Downloading Trivy DB")
+    try:
+        # Run the trivy db command to download the database
+        subprocess.run(['trivy', 'image', '--download-db-only'], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to download Trivy database: {e}")
+
 def run_trivy_scan(target, trivy_executable='trivy'):
     try:
         logging.info(f"Starting Trivy scan for image '{target}'.")
         image_present_before_scan = is_image_present(target)
 
         result = subprocess.run(
-            [trivy_executable, 'image', '--format', 'json', target],
+            [trivy_executable, 'image', '--skip-update', '--format', 'json', target],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -130,8 +139,13 @@ def main():
         'elasticsearch'
     ]
 
+    major_versions = [
+        8
+    ]
+
     all_vulns = {}
     mkdir_p(TEMP_DIR)
+    download_trivy_db()
     for product in products:
         repo = f"elastic/{product}"
         logging.info(f"Processing repository '{repo}'.")
@@ -143,14 +157,21 @@ def main():
 
         for release in releases:
             image_name = f"docker.elastic.co/{product}/{product}:{release}"
-            logging.info(f"Working on {image_name}")
+            try:
+                s_version = semantic_version.Version(release)
+            except ValueError:
+                s_version = 0
 
+            if s_version.major not in major_versions:
+                logging.info(f"Skipping {image_name}")
+                continue
+
+            logging.info(f"Working on {image_name}")
             image_available = pull_docker_image(image_name)
             if not image_available:
                 continue
 
             result = run_trivy_scan(image_name, trivy_executable=os.getenv('TRIVY_CMD', 'trivy'))
-
             for vuln_result in result.get('Results', []):
                 for vuln in vuln_result.get('Vulnerabilities', []):
                     vuln_id = vuln.get('VulnerabilityID')
