@@ -133,18 +133,22 @@ export default function CVETable({
                   </Badge>
                 </TableCell>
                 <TableCell className="align-top whitespace-nowrap">
-                  {cve.CVSS.nvd ? (
+                  <p>
+                  NVD:{" "}
+                  {cve.CVSS?.nvd ? (
                     <>
-                      NVD: {cve.CVSS.nvd.V3Score || cve.CVSS.nvd.V2Score}
-                      <br />
+                      {cve.CVSS.nvd.V3Score || cve.CVSS.nvd.V2Score}
                     </>
-                  ) : null}
-                  {cve.CVSS.redhat ? (
+                  ) : 'n/a'}
+                  </p>
+                  <p>
+                  RedHat:{" "}
+                  {cve.CVSS?.redhat ? (
                     <>
-                      RedHat:{" "}
                       {cve.CVSS.redhat.V3Score || cve.CVSS.redhat.V2Score}
                     </>
-                  ) : null}
+                  ) : 'n/a'}
+                  </p>
                 </TableCell>
                 <TableCell className="align-top">
                   <ul className="list-disc list-inside">
