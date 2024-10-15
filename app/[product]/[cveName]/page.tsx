@@ -95,18 +95,18 @@ export default async function CVEPage({
           </div>
           <div>
             <h3 className="text-lg font-semibold">CVSS Scores</h3>
-            {cve.CVSS.nvd && (
+            {cve.CVSS?.nvd && (
               <div>
                 <strong>NVD:</strong> 
-                {cve.CVSS.nvd.V3Score ? ` V3: ${cve.CVSS.nvd.V3Score}` : ''}
-                {cve.CVSS.nvd.V2Score ? ` V2: ${cve.CVSS.nvd.V2Score}` : ''}
+                {cve.CVSS?.nvd?.V3Score ? ` V3: ${cve.CVSS.nvd?.V3Score}` : ''}
+                {cve.CVSS?.nvd?.V2Score ? ` V2: ${cve.CVSS.nvd?.V2Score}` : ''}
               </div>
             )}
-            {cve.CVSS.redhat && (
+            {cve.CVSS?.redhat && (
               <div>
                 <strong>RedHat:</strong>
-                {cve.CVSS.redhat.V3Score ? ` V3: ${cve.CVSS.redhat.V3Score}` : ''}
-                {cve.CVSS.redhat.V2Score ? ` V2: ${cve.CVSS.redhat.V2Score}` : ''}
+                {cve.CVSS?.redhat?.V3Score ? ` V3: ${cve.CVSS.redhat?.V3Score}` : ''}
+                {cve.CVSS?.redhat?.V2Score ? ` V2: ${cve.CVSS.redhat?.V2Score}` : ''}
               </div>
             )}
           </div>
