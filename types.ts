@@ -21,6 +21,7 @@ export interface CVEData {
 
 export interface ProductData {
   name: string;
+  date: string;
   dockerImage: string;
   cveData: CVEData;
 }

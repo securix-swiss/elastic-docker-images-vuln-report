@@ -82,30 +82,33 @@ export default function CVETable({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <Select
-            onValueChange={(value) =>
-              setSelectedSeverity(value === "null" || !value ? null : value)
-            }
-          >
-            <SelectTrigger className="w-[180px] ">
-              <SelectValue placeholder="Filter by Severity" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem className="cursor-pointer" value="null">
-                All Severities
-              </SelectItem>{" "}
-              <SelectItem className="cursor-pointer" value="LOW">
-                Low
-              </SelectItem>
-              <SelectItem className="cursor-pointer" value="MEDIUM">
-                Medium
-              </SelectItem>
-              <SelectItem className="cursor-pointer" value="HIGH">
-                High
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex">
+          <div className="mb-4">
+            <Select
+              onValueChange={(value) =>
+                setSelectedSeverity(value === "null" || !value ? null : value)
+              }
+            >
+              <SelectTrigger className="w-[180px] ">
+                <SelectValue placeholder="Filter by Severity" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem className="cursor-pointer" value="null">
+                  All Severities
+                </SelectItem>{" "}
+                <SelectItem className="cursor-pointer" value="LOW">
+                  Low
+                </SelectItem>
+                <SelectItem className="cursor-pointer" value="MEDIUM">
+                  Medium
+                </SelectItem>
+                <SelectItem className="cursor-pointer" value="HIGH">
+                  High
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs font-light mt-4 ml-auto">Last updated: {productData?.date}</p>
         </div>
         <Table>
           <TableHeader>
@@ -122,7 +125,12 @@ export default function CVETable({
             {filteredCVEs.map(([cveId, cve]) => (
               <TableRow key={cveId}>
                 <TableCell className="align-top">
-                  <Link href={`/${productData?.name}/${cveId}`} className="text-blue-500 hover:text-blue-600 underline">{cveId}</Link>
+                  <Link
+                    href={`/${productData?.name}/${cveId}`}
+                    className="text-blue-500 hover:text-blue-600 underline"
+                  >
+                    {cveId}
+                  </Link>
                 </TableCell>
                 <TableCell className="max-w-md align-top text-pretty">
                   {cve.Description}
@@ -134,20 +142,20 @@ export default function CVETable({
                 </TableCell>
                 <TableCell className="align-top whitespace-nowrap">
                   <p>
-                  NVD:{" "}
-                  {cve.CVSS?.nvd ? (
-                    <>
-                      {cve.CVSS.nvd.V3Score || cve.CVSS.nvd.V2Score}
-                    </>
-                  ) : 'n/a'}
+                    NVD:{" "}
+                    {cve.CVSS?.nvd ? (
+                      <>{cve.CVSS.nvd.V3Score || cve.CVSS.nvd.V2Score}</>
+                    ) : (
+                      "n/a"
+                    )}
                   </p>
                   <p>
-                  RedHat:{" "}
-                  {cve.CVSS?.redhat ? (
-                    <>
-                      {cve.CVSS.redhat.V3Score || cve.CVSS.redhat.V2Score}
-                    </>
-                  ) : 'n/a'}
+                    RedHat:{" "}
+                    {cve.CVSS?.redhat ? (
+                      <>{cve.CVSS.redhat.V3Score || cve.CVSS.redhat.V2Score}</>
+                    ) : (
+                      "n/a"
+                    )}
                   </p>
                 </TableCell>
                 <TableCell className="align-top">

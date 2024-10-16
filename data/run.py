@@ -3,6 +3,7 @@ import requests
 import logging
 import json
 import os
+import datetime
 import semantic_version
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -201,6 +202,7 @@ def main():
                 all_vulns[product]['cveData'][vuln_id]['affected_versions'].sort(reverse=True)
                 all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].sort(reverse=True)
 
+        all_vulns['date'] = datetime.datetime.now().isoformat()
         with open(f"{TEMP_DIR}/{product}.json", "w") as f:
             json.dump(all_vulns[product], f, indent=2)
 
