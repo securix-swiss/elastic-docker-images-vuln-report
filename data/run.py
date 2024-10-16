@@ -58,6 +58,16 @@ def download_trivy_db(trivy_executable='trivy'):
             trivy_executable,
             'image',
             '--download-db-only',
+        ], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to download Trivy database: {e}")
+
+    logging.info(f"Downloading Trivy Java DB")
+    try:
+        # Run the trivy db command to download the database
+        subprocess.run([
+            trivy_executable,
+            'image',
             '--download-java-db-only'
         ], check=True)
     except subprocess.CalledProcessError as e:
@@ -72,7 +82,7 @@ def run_trivy_scan(target, trivy_executable='trivy'):
             [
                 trivy_executable,
                 'image',
-                '--skip-update',
+                '--skip-db-update',
                 '--skip-java-db-update',
                 '--scanners', 'vuln',
                 '--format', 'json',
