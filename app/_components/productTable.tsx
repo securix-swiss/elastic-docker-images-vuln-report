@@ -78,7 +78,7 @@ export default function CVETable({
             </Link>
             .
           </p>
-          <p>Docker image: {productData?.dockerImage}</p>
+          <p>Docker image: {productData?.dockerImage.split(':')[0]}</p>
         </CardDescription>
       </CardHeader>
       <CardContent>
