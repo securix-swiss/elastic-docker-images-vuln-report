@@ -3,6 +3,8 @@ import requests
 import logging
 import json
 import os
+import time
+import random
 import datetime
 import semantic_version
 
@@ -10,27 +12,40 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 TEMP_DIR='results/'
 
 def download_trivy_db(trivy_executable='trivy'):
-    logging.info(f"Downloading Trivy DB")
-    try:
-        # Run the trivy db command to download the database
-        subprocess.run([
-            trivy_executable,
-            'image',
-            '--download-db-only',
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to download Trivy database: {e}")
+    download_trivy_db_vuln(trivy_executable)
+    download_trivy_db_java(trivy_executable)
 
+def download_trivy_db_vuln(trivy_executable='trivy', retry=50):
+    logging.info(f"Downloading Trivy DB")
+    count = 0
+    while count < retry:
+        try:
+            # Run the trivy db command to download the database
+            subprocess.run([
+                trivy_executable,
+                'image',
+                '--download-db-only',
+            ], check=True)
+            count = retry
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to download Trivy database: {e}")
+            time.sleep(random.randint(10,20))
+
+def download_trivy_db_java(trivy_executable='trivy', retry=50):
     logging.info(f"Downloading Trivy Java DB")
-    try:
-        # Run the trivy db command to download the database
-        subprocess.run([
-            trivy_executable,
-            'image',
-            '--download-java-db-only'
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to download Trivy database: {e}")
+    count = 0
+    while count < retry:
+        try:
+            # Run the trivy db command to download the database
+            subprocess.run([
+                trivy_executable,
+                'image',
+                '--download-java-db-only'
+            ], check=True)
+            count = retry
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to download Trivy database: {e}")
+            time.sleep(random.randint(10,20))
 
 def run_trivy_scan(target, trivy_executable='trivy'):
     try:
