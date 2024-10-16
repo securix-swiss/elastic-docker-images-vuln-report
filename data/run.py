@@ -9,47 +9,6 @@ import semantic_version
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 TEMP_DIR='results/'
 
-def is_image_present(target):
-    logging.info(f"Checking if the Docker image '{target}' is present locally.")
-    result = subprocess.run(
-        ['docker', 'images', '-q', target],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    r = result.stdout.strip() != ""
-    if r:
-        logging.info(f"Image '{target}' is already present.")
-    else:
-        logging.info(f"Image '{target}' is not present and will be pulled during the scan.")
-    return r
-
-def remove_docker_image(target):
-    logging.info(f"Removing the Docker image '{target}'.")
-    subprocess.run(
-        ['docker', 'rmi', target],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    logging.info(f"Docker image '{target}' removed successfully.")
-
-def pull_docker_image(target):
-    image_present_before = is_image_present(target)
-    logging.info(f"Pulling Docker image '{target}'.")
-    r = subprocess.run(
-        ['docker', 'pull', target],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    if not image_present_before:
-        remove_docker_image(target)
-
-    if r.returncode != 0:
-        return False
-    return True
-
 def download_trivy_db(trivy_executable='trivy'):
     logging.info(f"Downloading Trivy DB")
     try:
@@ -76,8 +35,6 @@ def download_trivy_db(trivy_executable='trivy'):
 def run_trivy_scan(target, trivy_executable='trivy'):
     try:
         logging.info(f"Starting Trivy scan for image '{target}'.")
-        image_present_before_scan = is_image_present(target)
-
         result = subprocess.run(
             [
                 trivy_executable,
@@ -96,9 +53,6 @@ def run_trivy_scan(target, trivy_executable='trivy'):
 
         json_result = json.loads(result.stdout)
         logging.info(f"Trivy scan completed for image '{target}'.")
-
-        if not image_present_before_scan:
-            remove_docker_image(target)
 
         return json_result
     except subprocess.CalledProcessError as e:
@@ -173,13 +127,15 @@ def main():
     for product in products:
         repo = f"elastic/{product}"
         logging.info(f"Processing repository '{repo}'.")
-        releases = get_releases(repo)
+        all_releases = get_releases(repo)
+        releases = []
+        failed_releases = []
 
-        if not releases:
+        if not all_releases:
             logging.warning(f"No releases found for repo '{repo}'.")
             continue
 
-        for release in releases:
+        for release in all_releases:
             image_name = f"docker.elastic.co/{product}/{product}:{release}"
             try:
                 s_version = semantic_version.Version(release)
@@ -190,12 +146,17 @@ def main():
                 logging.info(f"Skipping {image_name}")
                 continue
 
+            releases.append(release)
+
+        for release in releases:
             logging.info(f"Working on {image_name}")
-            image_available = pull_docker_image(image_name)
-            if not image_available:
-                continue
+            image_name = f"docker.elastic.co/{product}/{product}:{release}"
 
             result = run_trivy_scan(image_name, trivy_executable=os.getenv('TRIVY_CMD', 'trivy'))
+            if not result:
+                failed_releases.append(release)
+                continue
+
             for vuln_result in result.get('Results', []):
                 for vuln in vuln_result.get('Vulnerabilities', []):
                     vuln_id = vuln.get('VulnerabilityID')
@@ -216,6 +177,9 @@ def main():
 
         # 2nd loop to check version is not affected
         for release in releases:
+            if release in failed_releases:
+                continue
+
             for vuln_id in all_vulns[product]['cveData'].keys():
                 if release not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
                     if release not in all_vulns[product]['cveData'][vuln_id]['not_affected_versions']:
