@@ -31,6 +31,9 @@ export default function RootLayout({
         <div className="my-8">
           {children}
         </div>
+        <footer className="my-6 mx-6 text-xs">
+        Copyright (c) 2024 SECURIX AG, <a href="https://github.com/securix-swiss/elastic-docker-images-vuln-report" target="blank" className="underline text-blue-600">Source</a>
+        </footer>
       </body>
     </html>
   );
