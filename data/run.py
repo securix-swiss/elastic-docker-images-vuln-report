@@ -204,16 +204,16 @@ def main():
                     if release not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
                         all_vulns[product]['cveData'][vuln_id]['affected_versions'].append(release)
 
-            # 2nd loop to check version is not affected
-            for release in releases:
-                for vuln_id in all_vulns[product]['cveData'].keys():
-                    if release not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
-                        if release not in all_vulns[product]['cveData'][vuln_id]['not_affected_versions']:
-                            all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].append(release)
-
+        # 2nd loop to check version is not affected
+        for release in releases:
             for vuln_id in all_vulns[product]['cveData'].keys():
-                all_vulns[product]['cveData'][vuln_id]['affected_versions'].sort(reverse=True)
-                all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].sort(reverse=True)
+                if release not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
+                    if release not in all_vulns[product]['cveData'][vuln_id]['not_affected_versions']:
+                        all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].append(release)
+
+        for vuln_id in all_vulns[product]['cveData'].keys():
+            all_vulns[product]['cveData'][vuln_id]['affected_versions'].sort(key=semantic_version.Version, reverse=True)
+            all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].sort(key=semantic_version.Version, reverse=True)
 
         all_vulns['date'] = datetime.datetime.now().isoformat()
         with open(f"{TEMP_DIR}/{product}.json", "w") as f:
