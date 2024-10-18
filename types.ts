@@ -19,9 +19,15 @@ export interface CVEData {
   [cveId: string]: CVE;
 }
 
+export interface Release {
+  version: string;
+  published_at: string;
+}
+
 export interface ProductData {
   name: string;
   date: string;
   dockerImage: string;
   cveData: CVEData;
+  releases: Release[];
 }

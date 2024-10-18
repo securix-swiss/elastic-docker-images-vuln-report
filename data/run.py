@@ -95,20 +95,19 @@ def get_releases(repo, enable_rc=False):
                 break
 
             # Remove leading 'v' from version tags
-            current_page_releases = [
-                release['tag_name'].lstrip('v') for release in current_page_releases
-            ]
+            for release in current_page_releases:
+                add = True
+                if not enable_rc:
+                    for word in ['rc', 'alpha', 'beta']:
+                        if word in release['tag_name'].lower():
+                            add = False
 
-            # Optionally filter out 'rc', 'alpha', and 'beta' releases
-            if not enable_rc:
-                current_page_releases = [
-                    release for release in current_page_releases
-                    if 'rc' not in release.lower() and
-                    'alpha' not in release.lower() and
-                    'beta' not in release.lower()
-                ]
+                if add:
+                    releases.append({
+                        'version': release['tag_name'].lstrip('v'),
+                        'published_at': release['published_at']
+                    })
 
-            releases.extend(current_page_releases)
             logging.info(f"Page {page} processed for repo '{repo}'.")
 
             page += 1  # Move to the next page
@@ -151,9 +150,9 @@ def main():
             continue
 
         for release in all_releases:
-            image_name = f"docker.elastic.co/{product}/{product}:{release}"
+            image_name = f"docker.elastic.co/{product}/{product}:{release['version']}"
             try:
-                s_version = semantic_version.Version(release)
+                s_version = semantic_version.Version(release['version'])
             except ValueError:
                 s_version = 0
 
@@ -165,40 +164,42 @@ def main():
 
         for release in releases:
             logging.info(f"Working on {image_name}")
-            image_name = f"docker.elastic.co/{product}/{product}:{release}"
+            image_name = f"docker.elastic.co/{product}/{product}:{release['version']}"
 
             result = run_trivy_scan(image_name, trivy_executable=os.getenv('TRIVY_CMD', 'trivy'))
             if not result:
-                failed_releases.append(release)
+                failed_releases.append(release['version'])
                 continue
+
+            if not all_vulns.get(product):
+                all_vulns[product] = {
+                    'cveData': {},
+                    'name': product,
+                    'dockerImage': image_name,
+                    'releases': releases
+                }
 
             for vuln_result in result.get('Results', []):
                 for vuln in vuln_result.get('Vulnerabilities', []):
                     vuln_id = vuln.get('VulnerabilityID')
 
-                    if not all_vulns.get(product):
-                        all_vulns[product] = {
-                            'cveData': {},
-                            'name': product,
-                            'dockerImage': image_name
-                        }
                     if not all_vulns[product]['cveData'].get(vuln_id):
                         all_vulns[product]['cveData'][vuln_id] = vuln
                         all_vulns[product]['cveData'][vuln_id]['affected_versions'] = []
                         all_vulns[product]['cveData'][vuln_id]['not_affected_versions'] = []
 
-                    if release not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
-                        all_vulns[product]['cveData'][vuln_id]['affected_versions'].append(release)
+                    if release['version'] not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
+                        all_vulns[product]['cveData'][vuln_id]['affected_versions'].append(release['version'])
 
         # 2nd loop to check version is not affected
         for release in releases:
-            if release in failed_releases:
+            if release['version'] in failed_releases:
                 continue
 
             for vuln_id in all_vulns[product]['cveData'].keys():
-                if release not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
-                    if release not in all_vulns[product]['cveData'][vuln_id]['not_affected_versions']:
-                        all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].append(release)
+                if release['version'] not in all_vulns[product]['cveData'][vuln_id]['affected_versions']:
+                    if release['version'] not in all_vulns[product]['cveData'][vuln_id]['not_affected_versions']:
+                        all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].append(release['version'])
 
         for vuln_id in all_vulns[product]['cveData'].keys():
             all_vulns[product]['cveData'][vuln_id]['affected_versions'].sort(key=semantic_version.Version, reverse=True)

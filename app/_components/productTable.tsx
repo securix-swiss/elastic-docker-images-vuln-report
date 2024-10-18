@@ -126,7 +126,7 @@ export default function CVETable({
               <TableRow key={cveId}>
                 <TableCell className="align-top">
                   <Link
-                    href={`/${productData?.name}/${cveId}`}
+                    href={`/${productData?.name}/cve/${cveId}`}
                     className="text-blue-500 hover:text-blue-600 underline"
                   >
                     {cveId}

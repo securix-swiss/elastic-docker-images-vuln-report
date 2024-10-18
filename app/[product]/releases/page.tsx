@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import CVETable from "../_components/productTable";
 import { ProductData } from "@/types";
+import ReleaseTable from "@/app/_components/productReleaseTables";
 
 async function loadProductData(product: string): Promise<ProductData | null> {
   const dataPath = path.join(process.cwd(), "data/results", `${product}.json`);
@@ -30,5 +30,5 @@ export default async function ProductPage({
   params: { product: string };
 }) {
   const productData = await loadProductData(product);
-  return <CVETable productData={productData} />;
+  return <ReleaseTable productData={productData} />;
 }

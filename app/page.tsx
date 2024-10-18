@@ -48,10 +48,16 @@ export default async function ProductPage({ params: {} }) {
             <CardHeader>
               <CardTitle className="text-lg font-semibold">{product}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Link href={`/${product}`}>
+            <CardContent className="space-x-4">
+              <Link href={`/${product}/cve`}>
                 <Button className="mt-4" variant="default">
-                  View CVE Report
+                  CVE Report
+                </Button>
+              </Link>
+
+              <Link href={`/${product}/releases`}>
+                <Button className="mt-4" variant="default">
+                  Release list
                 </Button>
               </Link>
             </CardContent>
