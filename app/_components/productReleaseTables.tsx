@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProductData } from "@/types";
-import Link from "next/link";
 
 export default function ReleaseTable({
   productData,
