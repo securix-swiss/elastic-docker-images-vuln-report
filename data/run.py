@@ -205,7 +205,7 @@ def main():
             all_vulns[product]['cveData'][vuln_id]['affected_versions'].sort(key=semantic_version.Version, reverse=True)
             all_vulns[product]['cveData'][vuln_id]['not_affected_versions'].sort(key=semantic_version.Version, reverse=True)
 
-        all_vulns['date'] = datetime.datetime.now().isoformat()
+        all_vulns[product]['date'] = datetime.datetime.now().isoformat()
         with open(f"{TEMP_DIR}/{product}.json", "w") as f:
             json.dump(all_vulns[product], f, indent=2)
 
