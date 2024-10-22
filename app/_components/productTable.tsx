@@ -41,10 +41,12 @@ export default function CVETable({
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
       case "low":
-        return "bg-yellow-500 hover:bg-yellow-600";
+        return "bg-blue-500 hover:bg-blue-600";
       case "medium":
-        return "bg-orange-500 hover:bg-orange-600";
+        return "bg-yellow-500 hover:bg-yellow-600";
       case "high":
+        return "bg-orange-500 hover:bg-orange-600";
+      case "critical":
         return "bg-red-500 hover:bg-red-600";
       default:
         return "bg-gray-500 hover:bg-gray-600";
@@ -104,6 +106,9 @@ export default function CVETable({
                 </SelectItem>
                 <SelectItem className="cursor-pointer" value="HIGH">
                   High
+                </SelectItem>
+                <SelectItem className="cursor-pointer" value="CRITICAL">
+                  Critical
                 </SelectItem>
               </SelectContent>
             </Select>
