@@ -86,7 +86,7 @@ export default async function CVEPage({
           <CardTitle>
             {product} - {cveName}
           </CardTitle>
-          <Link href={`/${product}`} passHref>
+          <Link href={`/${product}/cve`} passHref>
             <Button variant="outline" size="sm">
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back to Overview

@@ -23,16 +23,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentYear = new Date().getFullYear();
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <div className="my-8">
+        <div className="flex-grow my-8">
           {children}
         </div>
-        <footer className="my-6 mx-6 text-xs">
-        Copyright (c) 2024 SECURIX AG, <a href="https://github.com/securix-swiss/elastic-docker-images-vuln-report" target="blank" className="underline text-blue-600">Source</a>
+        <footer className="mt-auto py-6 text-center text-xs">
+          Copyright (c) {currentYear} SECURIX AG, <a href="https://github.com/securix-swiss/elastic-docker-images-vuln-report" target="blank" className="underline text-blue-600">Source</a>
         </footer>
       </body>
     </html>

@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp } from "lucide-react";
 import { ProductData } from "@/types";
 import Link from "next/link";
 
@@ -67,7 +67,15 @@ export default function CVETable({
   return (
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
-        <CardTitle>{productData?.name} CVE Information</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>{productData?.name?.charAt(0).toUpperCase() || '' + productData?.name?.slice(1)} CVE Information</CardTitle>
+          <Link href="/" passHref>
+            <Button variant="outline" size="sm">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back to Overview
+            </Button>
+          </Link>
+        </div>
         <CardDescription>
           <p>
             A list of all currenlty known CVE for {productData?.name} found by{" "}

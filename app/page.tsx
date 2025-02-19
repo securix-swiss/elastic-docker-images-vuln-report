@@ -46,7 +46,7 @@ export default async function ProductPage({ params: {} }) {
             className="w-full hover:shadow-lg transition-shadow duration-300"
           >
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">{product}</CardTitle>
+              <CardTitle className="text-lg font-semibold">{product.charAt(0).toUpperCase() + product.slice(1)}</CardTitle>
             </CardHeader>
             <CardContent className="space-x-4">
               <Link href={`/${product}/cve`}>
