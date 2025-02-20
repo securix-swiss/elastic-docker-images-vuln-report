@@ -69,10 +69,12 @@ export default async function CVEPage({
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
       case "low":
-        return "bg-yellow-500";
+        return "bg-blue-500";
       case "medium":
-        return "bg-orange-500";
+        return "bg-yellow-500";
       case "high":
+        return "bg-orange-500";
+      case "critical":
         return "bg-red-500";
       default:
         return "bg-gray-500";
