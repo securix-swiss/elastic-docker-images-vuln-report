@@ -59,16 +59,16 @@ export default function CVETable({
 
   const filteredCVEs = selectedSeverity
     ? Object.entries(productData!.cveData).filter(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        ([_, cve]) => cve.Severity === selectedSeverity
-      )
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ([_, cve]) => cve.Severity === selectedSeverity
+    )
     : Object.entries(productData!.cveData);
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>{productData?.name?.charAt(0).toUpperCase() || '' + productData?.name?.slice(1)} CVE Information</CardTitle>
+          <CardTitle>{productData?.name ? productData.name.charAt(0).toUpperCase() + productData.name.slice(1) : ''} Docker Image CVE Report</CardTitle>
           <Link href="/" passHref>
             <Button variant="outline" size="sm">
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -78,15 +78,13 @@ export default function CVETable({
         </div>
         <CardDescription>
           <p>
-            A list of all currenlty known CVE for {productData?.name} found by{" "}
-            <Link
+            We use <Link
               href="https://trivy.dev/"
               target="_blank"
               className="text-blue-500 hover:text-blue-600 underline"
             >
               trivy
-            </Link>
-            .
+            </Link> to scan the Docker image for CVEs. The report is updated every Wednesday morning and Sunday evening.
           </p>
           <p>Docker image: {productData?.dockerImage.split(':')[0]}</p>
         </CardDescription>
@@ -135,7 +133,17 @@ export default function CVETable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCVEs.map(([cveId, cve]) => (
+            {filteredCVEs.sort((a, b) => {
+              const severityOrder = {
+                'CRITICAL': 0,
+                'HIGH': 1,
+                'MEDIUM': 2,
+                'LOW': 3
+              };
+              const aSeverity = severityOrder[a[1].Severity as keyof typeof severityOrder] ?? 4;
+              const bSeverity = severityOrder[b[1].Severity as keyof typeof severityOrder] ?? 4;
+              return aSeverity - bSeverity;
+            }).map(([cveId, cve]) => (
               <TableRow key={cveId}>
                 <TableCell className="align-top">
                   <Link
