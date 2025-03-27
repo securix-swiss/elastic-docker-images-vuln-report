@@ -17,7 +17,7 @@
     "cross-spawn": "7.0.5",
     "fs": "^0.0.1-security",
     "lucide-react": "^0.451.0",
-    "nanoid": "3.3.8",
+    "nanoid": "^3.3.8",
     "next": "14.2.26",
     "react": "^18",
     "react-dom": "^18",
