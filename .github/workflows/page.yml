@@ -55,6 +55,8 @@ jobs:
         run: |
           yarn install
           yarn build
+          mkdir -p out/json
+          cp data/results/*.json out/json/.
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
