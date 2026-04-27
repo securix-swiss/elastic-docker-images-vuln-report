@@ -6,7 +6,7 @@ on:
       - main
   schedule:
     - cron: '5 4 * * 3'
-    - cron: '22 23 * * 0'
+    - cron: '54 9 * * 1'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
