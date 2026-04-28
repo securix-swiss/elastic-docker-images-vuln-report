@@ -20,6 +20,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    env:
+      MS_TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,8 +62,8 @@ jobs:
         run: cd data/ && TRIVY_CMD="../trivy" python run.py
 
       - name: Notify about new CVEs in MS Teams
-        if: ${{ secrets.MS_TEAMS_WEBHOOK_URL != '' }}
-        run: python data/notify_new_cves.py --webhook-url "${{ secrets.MS_TEAMS_WEBHOOK_URL }}"
+        if: ${{ env.MS_TEAMS_WEBHOOK_URL != '' }}
+        run: python data/notify_new_cves.py --webhook-url "$MS_TEAMS_WEBHOOK_URL"
 
       - name: Set up Yarn
         uses: actions/setup-node@v3
