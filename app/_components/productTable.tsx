@@ -67,14 +67,19 @@ export default function CVETable({
   return (
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>{productData?.name ? productData.name.charAt(0).toUpperCase() + productData.name.slice(1) : ''} Docker Image CVE Report</CardTitle>
-          <Link href="/" passHref>
-            <Button variant="outline" size="sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <CardTitle>
+            {productData?.name
+              ? productData.name.charAt(0).toUpperCase() + productData.name.slice(1)
+              : ""}{" "}
+            Docker Image CVE Report
+          </CardTitle>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/">
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back to Overview
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
         <CardDescription>
           <p>
@@ -86,11 +91,11 @@ export default function CVETable({
               trivy
             </Link> to scan the Docker image for CVEs. The report is updated every Wednesday morning and Sunday evening.
           </p>
-          <p>Docker image: {productData?.dockerImage.split(':')[0]}</p>
+          <p>Docker image: {productData?.dockerImage.split(":")[0]}</p>
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="mb-4">
             <Select
               onValueChange={(value) =>
@@ -119,33 +124,35 @@ export default function CVETable({
               </SelectContent>
             </Select>
           </div>
-          <p className="text-xs font-light mt-4 ml-auto">Last updated: {productData?.date}</p>
+          <p className="ml-auto text-xs font-light">
+            Last updated: {productData?.date}
+          </p>
         </div>
-        <Table>
+        <Table className="min-w-[1100px] table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead>CVE ID</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead>CVSS Score</TableHead>
-              <TableHead>Affected Versions</TableHead>
-              <TableHead>Not Affected Versions</TableHead>
+              <TableHead className="w-[12%]">CVE ID</TableHead>
+              <TableHead className="w-[34%]">Description</TableHead>
+              <TableHead className="w-[8%]">Severity</TableHead>
+              <TableHead className="w-[12%]">CVSS Score</TableHead>
+              <TableHead className="w-[17%]">Affected Versions</TableHead>
+              <TableHead className="w-[17%]">Not Affected Versions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredCVEs.sort((a, b) => {
               const severityOrder = {
-                'CRITICAL': 0,
-                'HIGH': 1,
-                'MEDIUM': 2,
-                'LOW': 3
+                CRITICAL: 0,
+                HIGH: 1,
+                MEDIUM: 2,
+                LOW: 3,
               };
               const aSeverity = severityOrder[a[1].Severity as keyof typeof severityOrder] ?? 4;
               const bSeverity = severityOrder[b[1].Severity as keyof typeof severityOrder] ?? 4;
               return aSeverity - bSeverity;
             }).map(([cveId, cve]) => (
               <TableRow key={cveId}>
-                <TableCell className="align-top">
+                <TableCell className="align-top whitespace-normal break-words">
                   <Link
                     href={`/${productData?.name}/cve/${cveId}`}
                     className="text-blue-500 hover:text-blue-600 underline"
@@ -153,16 +160,16 @@ export default function CVETable({
                     {cveId}
                   </Link>
                 </TableCell>
-                <TableCell className="max-w-md align-top text-pretty">
+                <TableCell className="align-top whitespace-normal break-words text-sm leading-6">
                   {cve.Description}
                 </TableCell>
-                <TableCell className="align-top">
-                  <Badge className={`${getSeverityColor(cve.Severity)}`}>
+                <TableCell className="align-top whitespace-nowrap">
+                  <Badge className={`${getSeverityColor(cve.Severity)} text-white`}>
                     {cve.Severity}
                   </Badge>
                 </TableCell>
-                <TableCell className="align-top whitespace-nowrap">
-                  <p>
+                <TableCell className="align-top whitespace-normal text-xs leading-5">
+                  <p className="whitespace-nowrap">
                     NVD:{" "}
                     {cve.CVSS?.nvd ? (
                       <>{cve.CVSS.nvd.V3Score || cve.CVSS.nvd.V2Score}</>
@@ -170,7 +177,7 @@ export default function CVETable({
                       "n/a"
                     )}
                   </p>
-                  <p>
+                  <p className="whitespace-nowrap">
                     RedHat:{" "}
                     {cve.CVSS?.redhat ? (
                       <>{cve.CVSS.redhat.V3Score || cve.CVSS.redhat.V2Score}</>
@@ -179,8 +186,8 @@ export default function CVETable({
                     )}
                   </p>
                 </TableCell>
-                <TableCell className="align-top">
-                  <ul className="list-disc list-inside">
+                <TableCell className="align-top whitespace-normal break-words text-xs leading-5">
+                  <ul className="list-disc list-inside space-y-0.5">
                     {cve.affected_versions
                       .slice(0, expandedRows[cveId] ? undefined : 5)
                       .map((version, index) => (
@@ -192,7 +199,7 @@ export default function CVETable({
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleExpand(cveId)}
-                      className="mt-2"
+                      className="mt-2 h-7 px-2 text-xs"
                     >
                       {expandedRows[cveId] ? (
                         <>
@@ -206,8 +213,8 @@ export default function CVETable({
                     </Button>
                   )}
                 </TableCell>
-                <TableCell className="align-top">
-                  <ul className="list-disc list-inside">
+                <TableCell className="align-top whitespace-normal break-words text-xs leading-5">
+                  <ul className="list-disc list-inside space-y-0.5">
                     {cve.not_affected_versions
                       .slice(0, expandedRows[cveId] ? undefined : 5)
                       .map((version, index) => (
@@ -219,7 +226,7 @@ export default function CVETable({
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleExpand(cveId)}
-                      className="mt-2"
+                      className="mt-2 h-7 px-2 text-xs"
                     >
                       {expandedRows[cveId] ? (
                         <>
