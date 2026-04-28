@@ -11,7 +11,7 @@ import requests
 DEFAULT_CONFIG_PATH = "data/scan_config.json"
 DEFAULT_DEPLOYED_BASE_URL = "https://securix-swiss.github.io/elastic-docker-images-vuln-report/json/"
 
-INTERESTING_SEVERITIES = {"HIGH", "CRITICAL"}
+INTERESTING_SEVERITIES = {"CRITICAL"}
 REPORT_BASE_URL = "https://securix-swiss.github.io/elastic-docker-images-vuln-report"
 
 
@@ -240,7 +240,7 @@ def build_teams_card(
             "items": [
                 {
                     "type": "TextBlock",
-                    "text": f"🔒 {total} New HIGH/CRITICAL CVE{'s' if total != 1 else ''}",
+                    "text": f"🔒 {total} New CRITICAL CVE{'s' if total != 1 else ''}",
                     "weight": "bolder",
                     "size": "large",
                     "wrap": True,
@@ -393,7 +393,7 @@ def main() -> int:
             new_cves_by_file[local_file.name] = interesting_entries
 
     if not new_cves_by_file:
-        print("No new HIGH/CRITICAL CVEs found compared to deployed JSON files.")
+        print("No new CRITICAL CVEs found compared to deployed JSON files.")
         return 0
 
     teams_payload = build_teams_card(new_cves_by_file)
