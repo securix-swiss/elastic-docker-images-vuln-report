@@ -25,10 +25,11 @@ export async function generateStaticParams() {
 }
 
 export default async function ProductPage({
-  params: { product },
+  params,
 }: {
-  params: { product: string };
+  params: Promise<{ product: string }>;
 }) {
+  const { product } = await params;
   const productData = await loadProductData(product);
   return <CVETable productData={productData} />;
 }

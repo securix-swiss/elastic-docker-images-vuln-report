@@ -56,10 +56,11 @@ export async function generateStaticParams() {
 }
 
 export default async function CVEPage({
-  params: { product, cveName },
+  params,
 }: {
-  params: { product: string; cveName: string };
+  params: Promise<{ product: string; cveName: string }>;
 }) {
+  const { product, cveName } = await params;
   const cve = await loadCVEData(product, cveName);
 
   if (!cve) {
