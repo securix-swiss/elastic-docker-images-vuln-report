@@ -1,0 +1,9 @@
+{
+  "products": [
+    "kibana",
+    "elasticsearch"
+  ],
+  "major_versions": [
+    8
+  ]
+}

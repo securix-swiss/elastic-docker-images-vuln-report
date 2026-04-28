@@ -10,6 +10,12 @@ import semantic_version
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 TEMP_DIR='results/'
+CONFIG_PATH='scan_config.json'
+
+
+def load_config(config_path=CONFIG_PATH):
+    with open(config_path, 'r') as f:
+        return json.load(f)
 
 def download_trivy_db(trivy_executable='trivy'):
     download_trivy_db_vuln(trivy_executable)
@@ -126,14 +132,9 @@ def mkdir_p(path):
         pass
 
 def main():
-    products = [
-        'kibana',
-        'elasticsearch'
-    ]
-
-    major_versions = [
-        8
-    ]
+    config = load_config()
+    products = config.get('products', [])
+    major_versions = config.get('major_versions', [])
 
     all_vulns = {}
     mkdir_p(TEMP_DIR)

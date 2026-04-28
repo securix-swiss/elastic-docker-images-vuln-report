@@ -59,6 +59,10 @@ jobs:
       - name: Get trivy data
         run: cd data/ && TRIVY_CMD="../trivy" python run.py
 
+      - name: Notify about new CVEs in MS Teams
+        if: ${{ secrets.MS_TEAMS_WEBHOOK_URL != '' }}
+        run: python data/notify_new_cves.py --webhook-url "${{ secrets.MS_TEAMS_WEBHOOK_URL }}"
+
       - name: Set up Yarn
         uses: actions/setup-node@v3
         with:
