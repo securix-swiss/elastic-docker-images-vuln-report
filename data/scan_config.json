@@ -4,6 +4,7 @@
     "elasticsearch"
   ],
   "major_versions": [
+    9,
     8
   ]
 }
