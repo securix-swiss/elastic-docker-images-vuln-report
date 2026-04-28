@@ -27,10 +27,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
       - name: Download Trivy
         run: |
-          curl -sSL https://github.com/aquasecurity/trivy/releases/download/v0.41.0/trivy_0.41.0_Linux-64bit.tar.gz -o trivy.tar.gz
-          echo "53f6ab1251ea5f25c32f63d306ad41b5c3a425924cf2632abc16368f611872e6  trivy.tar.gz" | sha256sum -c -
+          TRIVY_VERSION="0.70.0"
+          TRIVY_TAG="v${TRIVY_VERSION}"
+          TRIVY_ASSET="trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          TRIVY_BASE_URL="https://github.com/aquasecurity/trivy/releases/download/${TRIVY_TAG}"
+
+          curl -sSL "${TRIVY_BASE_URL}/${TRIVY_ASSET}" -o trivy.tar.gz
+          curl -sSL "${TRIVY_BASE_URL}/${TRIVY_ASSET}.sigstore.json" -o trivy.tar.gz.sigstore.json
+
+          cosign verify-blob-attestation trivy.tar.gz \
+            --bundle trivy.tar.gz.sigstore.json \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/${TRIVY_TAG}"
+
           tar -xzf trivy.tar.gz
           chmod +x trivy
 
@@ -69,6 +83,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Call Tines for Alerting critical CVEs
-        run: |
-          curl -sSL ${{ secrets.TINES_WEBHOOK_URL }}
