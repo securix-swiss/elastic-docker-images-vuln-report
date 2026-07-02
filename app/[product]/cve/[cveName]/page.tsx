@@ -51,19 +51,26 @@ export async function generateStaticParams() {
   return params;
 }
 
-function VersionChips({ versions }: { versions: string[] }) {
+function VersionChips({
+  product,
+  versions,
+}: {
+  product: string;
+  versions: string[];
+}) {
   if (versions.length === 0) {
     return <p className="text-sm text-muted-foreground">None</p>;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
       {versions.map((version) => (
-        <span
+        <Link
           key={version}
-          className="rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-xs"
+          href={`/${product}/versions/${version}`}
+          className="rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-xs transition-colors hover:bg-muted hover:text-foreground"
         >
           {version}
-        </span>
+        </Link>
       ))}
     </div>
   );
@@ -241,7 +248,7 @@ export default async function CVEPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <VersionChips versions={cve.affected_versions} />
+            <VersionChips product={product} versions={cve.affected_versions} />
           </CardContent>
         </Card>
         <Card>
@@ -255,7 +262,10 @@ export default async function CVEPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <VersionChips versions={cve.not_affected_versions} />
+            <VersionChips
+              product={product}
+              versions={cve.not_affected_versions}
+            />
           </CardContent>
         </Card>
       </div>

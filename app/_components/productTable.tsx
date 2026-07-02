@@ -46,10 +46,12 @@ function SeverityBadge({ severity }: { severity: string }) {
 const VERSION_PREVIEW_COUNT = 6;
 
 function VersionList({
+  slug,
   versions,
   expanded,
   onToggle,
 }: {
+  slug: string;
   versions: string[];
   expanded: boolean;
   onToggle: () => void;
@@ -64,12 +66,13 @@ function VersionList({
   return (
     <div className="flex flex-wrap gap-1">
       {visible.map((version) => (
-        <span
+        <Link
           key={version}
-          className="rounded-md border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] leading-4"
+          href={`/${slug}/versions/${version}`}
+          className="rounded-md border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] leading-4 transition-colors hover:bg-muted hover:text-foreground"
         >
           {version}
-        </span>
+        </Link>
       ))}
       {hiddenCount > 0 && (
         <button
@@ -329,6 +332,7 @@ export default function CVETable({
                     </TableCell>
                     <TableCell className="whitespace-normal align-top">
                       <VersionList
+                        slug={slug}
                         versions={cve.affected_versions}
                         expanded={!!expandedRows[cveId]}
                         onToggle={() => toggleExpand(cveId)}
@@ -336,6 +340,7 @@ export default function CVETable({
                     </TableCell>
                     <TableCell className="whitespace-normal align-top">
                       <VersionList
+                        slug={slug}
                         versions={cve.not_affected_versions}
                         expanded={!!expandedRows[cveId]}
                         onToggle={() => toggleExpand(cveId)}
