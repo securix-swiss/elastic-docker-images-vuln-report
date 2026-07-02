@@ -1,13 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import React, { useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,234 +11,343 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronLeft, ChevronUp } from "lucide-react";
-import { ProductData } from "@/types";
+import { ChevronDown, ChevronUp, Search, SearchX } from "lucide-react";
+import { CVE, ProductData } from "@/types";
 import Link from "next/link";
+import ProductHeader from "./productHeader";
+import {
+  SEVERITY_ORDER,
+  SEVERITY_STYLES,
+  Severity,
+  normalizeSeverity,
+  severityRank,
+} from "@/lib/severity";
+import { cn } from "@/lib/utils";
+
+function SeverityBadge({ severity }: { severity: string }) {
+  const normalized = normalizeSeverity(severity);
+  return (
+    <Badge
+      variant="outline"
+      className={cn("gap-1.5", SEVERITY_STYLES[normalized].badge)}
+    >
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          SEVERITY_STYLES[normalized].dot
+        )}
+      />
+      {SEVERITY_STYLES[normalized].label}
+    </Badge>
+  );
+}
+
+const VERSION_PREVIEW_COUNT = 6;
+
+function VersionList({
+  versions,
+  expanded,
+  onToggle,
+}: {
+  versions: string[];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (versions.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  const visible = expanded
+    ? versions
+    : versions.slice(0, VERSION_PREVIEW_COUNT);
+  const hiddenCount = versions.length - VERSION_PREVIEW_COUNT;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {visible.map((version) => (
+        <span
+          key={version}
+          className="rounded-md border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] leading-4"
+        >
+          {version}
+        </span>
+      ))}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-0.5 rounded-md border border-dashed px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {expanded ? (
+            <>
+              Show less <ChevronUp className="size-3" />
+            </>
+          ) : (
+            <>
+              +{hiddenCount} more <ChevronDown className="size-3" />
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function maxScore(cve: CVE): number {
+  return Math.max(
+    cve.CVSS?.nvd?.V3Score ?? cve.CVSS?.nvd?.V2Score ?? 0,
+    cve.CVSS?.redhat?.V3Score ?? cve.CVSS?.redhat?.V2Score ?? 0
+  );
+}
 
 export default function CVETable({
+  slug,
   productData,
 }: {
+  slug: string;
   productData: ProductData | null;
 }) {
-  const [selectedSeverity, setSelectedSeverity] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [selectedSeverity, setSelectedSeverity] = useState<Severity | null>(
+    null
+  );
   const [expandedRows, setExpandedRows] = useState<{ [key: string]: boolean }>(
     {}
   );
-  const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case "low":
-        return "bg-blue-500 hover:bg-blue-600";
-      case "medium":
-        return "bg-yellow-500 hover:bg-yellow-600";
-      case "high":
-        return "bg-orange-500 hover:bg-orange-600";
-      case "critical":
-        return "bg-red-500 hover:bg-red-600";
-      default:
-        return "bg-gray-500 hover:bg-gray-600";
-    }
-  };
+
+  const allCVEs = useMemo(
+    () => Object.entries(productData?.cveData ?? {}),
+    [productData]
+  );
+
+  const severityCounts = useMemo(() => {
+    const counts: Record<Severity, number> = {
+      CRITICAL: 0,
+      HIGH: 0,
+      MEDIUM: 0,
+      LOW: 0,
+      UNKNOWN: 0,
+    };
+    allCVEs.forEach(([, cve]) => {
+      counts[normalizeSeverity(cve.Severity)] += 1;
+    });
+    return counts;
+  }, [allCVEs]);
+
+  const filteredCVEs = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return allCVEs
+      .filter(([cveId, cve]) => {
+        if (
+          selectedSeverity &&
+          normalizeSeverity(cve.Severity) !== selectedSeverity
+        ) {
+          return false;
+        }
+        if (!needle) return true;
+        return [cveId, cve.Title, cve.Description, cve.PkgName]
+          .filter(Boolean)
+          .some((field) => field!.toLowerCase().includes(needle));
+      })
+      .sort((a, b) => {
+        const bySeverity =
+          severityRank(a[1].Severity) - severityRank(b[1].Severity);
+        if (bySeverity !== 0) return bySeverity;
+        return maxScore(b[1]) - maxScore(a[1]);
+      });
+  }, [allCVEs, query, selectedSeverity]);
 
   const toggleExpand = (cveId: string) => {
     setExpandedRows((prev) => ({ ...prev, [cveId]: !prev[cveId] }));
   };
 
-  const filteredCVEs = selectedSeverity
-    ? Object.entries(productData!.cveData).filter(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ([_, cve]) => cve.Severity === selectedSeverity
-    )
-    : Object.entries(productData!.cveData);
+  const hasActiveFilter = query.trim() !== "" || selectedSeverity !== null;
+
+  if (!productData) {
+    return <p className="text-muted-foreground">Product not found.</p>;
+  }
 
   return (
-    <Card className="w-full max-w-6xl mx-auto">
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>
-            {productData?.name
-              ? productData.name.charAt(0).toUpperCase() + productData.name.slice(1)
-              : ""}{" "}
-            Docker Image CVE Report
-          </CardTitle>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Overview
-            </Link>
-          </Button>
-        </div>
-        <CardDescription>
-          <p>
-            We use <Link
-              href="https://trivy.dev/"
-              target="_blank"
-              className="text-blue-500 hover:text-blue-600 underline"
+    <>
+      <ProductHeader
+        slug={slug}
+        name={productData.name}
+        dockerImage={productData.dockerImage}
+        date={productData.date}
+        active="cve"
+      />
+
+      <Card className="w-full">
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search CVE, package, description…"
+                aria-label="Search CVEs"
+                className="h-8 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </div>
+
+            <div
+              role="group"
+              aria-label="Filter by severity"
+              className="flex flex-wrap items-center gap-1.5"
             >
-              trivy
-            </Link> to scan the Docker image for CVEs. The report is updated every Wednesday morning and Sunday evening.
-          </p>
-          <p>Docker image: {productData?.dockerImage.split(":")[0]}</p>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="mb-4">
-            <Select
-              onValueChange={(value) =>
-                setSelectedSeverity(value === "null" || !value ? null : value)
-              }
-            >
-              <SelectTrigger className="w-[180px] ">
-                <SelectValue placeholder="Filter by Severity" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem className="cursor-pointer" value="null">
-                  All Severities
-                </SelectItem>{" "}
-                <SelectItem className="cursor-pointer" value="LOW">
-                  Low
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="MEDIUM">
-                  Medium
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="HIGH">
-                  High
-                </SelectItem>
-                <SelectItem className="cursor-pointer" value="CRITICAL">
-                  Critical
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <button
+                type="button"
+                onClick={() => setSelectedSeverity(null)}
+                aria-pressed={selectedSeverity === null}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors",
+                  selectedSeverity === null
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                All {allCVEs.length}
+              </button>
+              {SEVERITY_ORDER.filter(
+                (severity) =>
+                  severity !== "UNKNOWN" || severityCounts[severity] > 0
+              ).map((severity) => (
+                <button
+                  key={severity}
+                  type="button"
+                  onClick={() =>
+                    setSelectedSeverity(
+                      selectedSeverity === severity ? null : severity
+                    )
+                  }
+                  aria-pressed={selectedSeverity === severity}
+                  className={cn(
+                    "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium tabular-nums transition-colors",
+                    selectedSeverity === severity
+                      ? SEVERITY_STYLES[severity].badge
+                      : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      SEVERITY_STYLES[severity].dot
+                    )}
+                  />
+                  {SEVERITY_STYLES[severity].label}{" "}
+                  {severityCounts[severity]}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="ml-auto text-xs font-light">
-            Last updated: {productData?.date}
+
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            Showing {filteredCVEs.length} of {allCVEs.length} vulnerabilities
           </p>
-        </div>
-        <Table className="min-w-[1100px] table-fixed">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[12%]">CVE ID</TableHead>
-              <TableHead className="w-[34%]">Description</TableHead>
-              <TableHead className="w-[8%]">Severity</TableHead>
-              <TableHead className="w-[12%]">CVSS Score</TableHead>
-              <TableHead className="w-[17%]">Affected Versions</TableHead>
-              <TableHead className="w-[17%]">Not Affected Versions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCVEs.sort((a, b) => {
-              const severityOrder = {
-                CRITICAL: 0,
-                HIGH: 1,
-                MEDIUM: 2,
-                LOW: 3,
-              };
-              const aSeverity = severityOrder[a[1].Severity as keyof typeof severityOrder] ?? 4;
-              const bSeverity = severityOrder[b[1].Severity as keyof typeof severityOrder] ?? 4;
-              return aSeverity - bSeverity;
-            }).map(([cveId, cve]) => (
-              <TableRow key={cveId}>
-                <TableCell className="align-top whitespace-normal break-words">
-                  <Link
-                    href={`/${productData?.name}/cve/${cveId}`}
-                    className="text-blue-500 hover:text-blue-600 underline"
-                  >
-                    {cveId}
-                  </Link>
-                </TableCell>
-                <TableCell className="align-top whitespace-normal break-words text-sm leading-6">
-                  {cve.Description}
-                </TableCell>
-                <TableCell className="align-top whitespace-nowrap">
-                  <Badge className={`${getSeverityColor(cve.Severity)} text-white`}>
-                    {cve.Severity}
-                  </Badge>
-                </TableCell>
-                <TableCell className="align-top whitespace-normal text-xs leading-5">
-                  <p className="whitespace-nowrap">
-                    NVD:{" "}
-                    {cve.CVSS?.nvd ? (
-                      <>{cve.CVSS.nvd.V3Score || cve.CVSS.nvd.V2Score}</>
-                    ) : (
-                      "n/a"
-                    )}
-                  </p>
-                  <p className="whitespace-nowrap">
-                    RedHat:{" "}
-                    {cve.CVSS?.redhat ? (
-                      <>{cve.CVSS.redhat.V3Score || cve.CVSS.redhat.V2Score}</>
-                    ) : (
-                      "n/a"
-                    )}
-                  </p>
-                </TableCell>
-                <TableCell className="align-top whitespace-normal break-words text-xs leading-5">
-                  <ul className="list-disc list-inside space-y-0.5">
-                    {cve.affected_versions
-                      .slice(0, expandedRows[cveId] ? undefined : 5)
-                      .map((version, index) => (
-                        <li key={index}>{version}</li>
-                      ))}
-                  </ul>
-                  {cve.affected_versions.length > 5 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleExpand(cveId)}
-                      className="mt-2 h-7 px-2 text-xs"
-                    >
-                      {expandedRows[cveId] ? (
-                        <>
-                          Show Less <ChevronUp className="ml-2 h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          Show More <ChevronDown className="ml-2 h-4 w-4" />
-                        </>
+
+          {filteredCVEs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center">
+              <SearchX className="size-8 text-muted-foreground/50" />
+              <p className="text-sm font-medium">No CVEs match your filters</p>
+              <p className="text-xs text-muted-foreground">
+                Try a different search term or severity.
+              </p>
+              {hasActiveFilter && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    setQuery("");
+                    setSelectedSeverity(null);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table className="min-w-[1100px] table-fixed">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[15%]">CVE / Package</TableHead>
+                  <TableHead className="w-[31%]">Description</TableHead>
+                  <TableHead className="w-[9%]">Severity</TableHead>
+                  <TableHead className="w-[9%]">CVSS</TableHead>
+                  <TableHead className="w-[18%]">Affected versions</TableHead>
+                  <TableHead className="w-[18%]">Fixed / not affected</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCVEs.map(([cveId, cve]) => (
+                  <TableRow key={cveId}>
+                    <TableCell className="whitespace-normal break-words align-top">
+                      <Link
+                        href={`/${slug}/cve/${cveId}`}
+                        className="font-mono text-xs font-medium text-primary underline-offset-4 hover:underline"
+                      >
+                        {cveId}
+                      </Link>
+                      {cve.PkgName && (
+                        <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                          {cve.PkgName}
+                        </p>
                       )}
-                    </Button>
-                  )}
-                </TableCell>
-                <TableCell className="align-top whitespace-normal break-words text-xs leading-5">
-                  <ul className="list-disc list-inside space-y-0.5">
-                    {cve.not_affected_versions
-                      .slice(0, expandedRows[cveId] ? undefined : 5)
-                      .map((version, index) => (
-                        <li key={index}>{version}</li>
-                      ))}
-                  </ul>
-                  {cve.not_affected_versions.length > 5 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleExpand(cveId)}
-                      className="mt-2 h-7 px-2 text-xs"
-                    >
-                      {expandedRows[cveId] ? (
-                        <>
-                          Show Less <ChevronUp className="ml-2 h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          Show More <ChevronDown className="ml-2 h-4 w-4" />
-                        </>
+                    </TableCell>
+                    <TableCell className="whitespace-normal break-words align-top">
+                      {cve.Title && (
+                        <p className="text-sm font-medium leading-5">
+                          {cve.Title}
+                        </p>
                       )}
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                      <p
+                        className={cn(
+                          "text-xs leading-5 text-muted-foreground",
+                          !expandedRows[cveId] && "line-clamp-3"
+                        )}
+                      >
+                        {cve.Description}
+                      </p>
+                    </TableCell>
+                    <TableCell className="align-top">
+                      <SeverityBadge severity={cve.Severity} />
+                    </TableCell>
+                    <TableCell className="align-top text-xs leading-5">
+                      <p className="whitespace-nowrap tabular-nums">
+                        <span className="text-muted-foreground">NVD</span>{" "}
+                        {cve.CVSS?.nvd?.V3Score ??
+                          cve.CVSS?.nvd?.V2Score ??
+                          "n/a"}
+                      </p>
+                      <p className="whitespace-nowrap tabular-nums">
+                        <span className="text-muted-foreground">RedHat</span>{" "}
+                        {cve.CVSS?.redhat?.V3Score ??
+                          cve.CVSS?.redhat?.V2Score ??
+                          "n/a"}
+                      </p>
+                    </TableCell>
+                    <TableCell className="whitespace-normal align-top">
+                      <VersionList
+                        versions={cve.affected_versions}
+                        expanded={!!expandedRows[cveId]}
+                        onToggle={() => toggleExpand(cveId)}
+                      />
+                    </TableCell>
+                    <TableCell className="whitespace-normal align-top">
+                      <VersionList
+                        versions={cve.not_affected_versions}
+                        expanded={!!expandedRows[cveId]}
+                        onToggle={() => toggleExpand(cveId)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 }

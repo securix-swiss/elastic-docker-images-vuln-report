@@ -1,6 +1,16 @@
 export interface CVE {
   Description: string;
   Severity: 'LOW' | 'MEDIUM' | 'HIGH' | string; // Assuming there could be other severity levels as well
+  Title?: string;
+  PkgName?: string;
+  PkgID?: string;
+  InstalledVersion?: string;
+  Status?: string;
+  PrimaryURL?: string;
+  References?: string[];
+  PublishedDate?: string;
+  LastModifiedDate?: string;
+  CweIDs?: string[];
   CVSS: {
     nvd?: {
       V2Score?: number;

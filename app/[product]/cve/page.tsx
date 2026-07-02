@@ -31,5 +31,5 @@ export default async function ProductPage({
 }) {
   const { product } = await params;
   const productData = await loadProductData(product);
-  return <CVETable productData={productData} />;
+  return <CVETable slug={product} productData={productData} />;
 }

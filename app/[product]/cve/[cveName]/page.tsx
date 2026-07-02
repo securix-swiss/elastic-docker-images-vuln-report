@@ -1,18 +1,14 @@
 import React from "react";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { CheckCircle2, ChevronRight, ExternalLink, ShieldAlert } from "lucide-react";
 import { CVE } from "@/types";
 import path from "path";
 import fs from "fs";
+import { SEVERITY_STYLES, normalizeSeverity } from "@/lib/severity";
+import { capitalize, cn, formatDate } from "@/lib/utils";
 
 async function loadCVEData(
   product: string,
@@ -55,6 +51,24 @@ export async function generateStaticParams() {
   return params;
 }
 
+function VersionChips({ versions }: { versions: string[] }) {
+  if (versions.length === 0) {
+    return <p className="text-sm text-muted-foreground">None</p>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {versions.map((version) => (
+        <span
+          key={version}
+          className="rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-xs"
+        >
+          {version}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default async function CVEPage({
   params,
 }: {
@@ -64,93 +78,217 @@ export default async function CVEPage({
   const cve = await loadCVEData(product, cveName);
 
   if (!cve) {
-    return <div>CVE not found</div>;
+    return (
+      <div className="flex flex-col items-center gap-4 py-24 text-center">
+        <p className="text-lg font-medium">CVE not found</p>
+        <Button variant="outline" asChild>
+          <Link href={`/${product}/cve`}>Back to {capitalize(product)} CVEs</Link>
+        </Button>
+      </div>
+    );
   }
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case "low":
-        return "bg-blue-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "high":
-        return "bg-orange-500";
-      case "critical":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
+  const severity = normalizeSeverity(cve.Severity);
+
+  const scores = [
+    {
+      label: "NVD",
+      v3: cve.CVSS?.nvd?.V3Score,
+      v2: cve.CVSS?.nvd?.V2Score,
+    },
+    {
+      label: "RedHat",
+      v3: cve.CVSS?.redhat?.V3Score,
+      v2: cve.CVSS?.redhat?.V2Score,
+    },
+  ];
+
+  const references = cve.References ?? [];
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>
-            {product} - {cveName}
-          </CardTitle>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/${product}/cve`}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Overview
-            </Link>
-          </Button>
-        </div>
-        <CardDescription>Detailed information about this CVE</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold">Severity</h3>
-            <Badge className={`${getSeverityColor(cve.Severity)}`}>
-              {cve.Severity}
+    <div className="mx-auto w-full max-w-4xl">
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
+      >
+        <Link href="/" className="transition-colors hover:text-foreground">
+          Overview
+        </Link>
+        <ChevronRight className="size-3.5" />
+        <Link
+          href={`/${product}/cve`}
+          className="transition-colors hover:text-foreground"
+        >
+          {capitalize(product)}
+        </Link>
+        <ChevronRight className="size-3.5" />
+        <span className="font-medium text-foreground">{cveName}</span>
+      </nav>
+
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
+              {cveName}
+            </h1>
+            <Badge
+              variant="outline"
+              className={cn("gap-1.5", SEVERITY_STYLES[severity].badge)}
+            >
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  SEVERITY_STYLES[severity].dot
+                )}
+              />
+              {SEVERITY_STYLES[severity].label}
             </Badge>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold">Description</h3>
-            <p>{cve.Description}</p>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">CVSS Scores</h3>
-            {cve.CVSS?.nvd && (
-              <div>
-                <strong>NVD:</strong>
-                {cve.CVSS?.nvd?.V3Score ? ` V3: ${cve.CVSS.nvd?.V3Score}` : ""}
-                {cve.CVSS?.nvd?.V2Score ? ` V2: ${cve.CVSS.nvd?.V2Score}` : ""}
-              </div>
-            )}
-            {cve.CVSS?.redhat && (
-              <div>
-                <strong>RedHat:</strong>
-                {cve.CVSS?.redhat?.V3Score
-                  ? ` V3: ${cve.CVSS.redhat?.V3Score}`
-                  : ""}
-                {cve.CVSS?.redhat?.V2Score
-                  ? ` V2: ${cve.CVSS.redhat?.V2Score}`
-                  : ""}
-              </div>
-            )}
-          </div>
-          <div className="flex space-x-32">
-            <div>
-              <h3 className="text-lg font-semibold">Affected Versions</h3>
-              <ul className="list-disc list-inside">
-                {cve.affected_versions.map((version, index) => (
-                  <li key={index}>{version}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">Not Affected Versions</h3>
-              <ul className="list-disc list-inside">
-                {cve.not_affected_versions.map((version, index) => (
-                  <li key={index}>{version}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          {cve.Title && (
+            <p className="mt-2 max-w-2xl text-pretty text-muted-foreground">
+              {cve.Title}
+            </p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        {cve.PrimaryURL && (
+          <Button variant="outline" size="sm" asChild>
+            <a href={cve.PrimaryURL} target="_blank" rel="noopener noreferrer">
+              Vulnerability database
+              <ExternalLink className="size-3.5" />
+            </a>
+          </Button>
+        )}
+      </div>
+
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card className="gap-1 py-4">
+          <CardContent className="px-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Package
+            </p>
+            <p className="mt-1 break-all font-mono text-sm font-medium">
+              {cve.PkgName ?? "n/a"}
+            </p>
+            {cve.InstalledVersion && (
+              <p className="break-all font-mono text-xs text-muted-foreground">
+                {cve.InstalledVersion}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        {scores.map((score) => (
+          <Card key={score.label} className="gap-1 py-4">
+            <CardContent className="px-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                CVSS {score.label}
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">
+                {score.v3 ?? score.v2 ?? "n/a"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {score.v3 ? "v3 score" : score.v2 ? "v2 score" : "not rated"}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+        <Card className="gap-1 py-4">
+          <CardContent className="px-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Published
+            </p>
+            <p className="mt-1 text-sm font-medium">
+              {formatDate(cve.PublishedDate)}
+            </p>
+            {cve.LastModifiedDate && (
+              <p className="text-xs text-muted-foreground">
+                Modified {formatDate(cve.LastModifiedDate)}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Description</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {cve.Description}
+          </p>
+          {cve.CweIDs && cve.CweIDs.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Weakness:</span>
+              {cve.CweIDs.map((cwe) => (
+                <Badge key={cwe} variant="outline" className="font-mono">
+                  {cwe}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldAlert className="size-4 text-red-600 dark:text-red-400" />
+              Affected versions
+              <span className="ml-auto text-sm font-normal tabular-nums text-muted-foreground">
+                {cve.affected_versions.length}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VersionChips versions={cve.affected_versions} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+              Not affected versions
+              <span className="ml-auto text-sm font-normal tabular-nums text-muted-foreground">
+                {cve.not_affected_versions.length}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <VersionChips versions={cve.not_affected_versions} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {references.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              References
+              <span className="ml-2 text-sm font-normal tabular-nums text-muted-foreground">
+                {references.length}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1.5">
+              {references.map((reference) => (
+                <li key={reference} className="flex items-start gap-2">
+                  <ExternalLink className="mt-1 size-3 shrink-0 text-muted-foreground" />
+                  <a
+                    href={reference}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                  >
+                    {reference}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

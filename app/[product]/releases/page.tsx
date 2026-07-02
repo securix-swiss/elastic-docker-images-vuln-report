@@ -31,5 +31,5 @@ export default async function ProductPage({
 }) {
   const { product } = await params;
   const productData = await loadProductData(product);
-  return <ReleaseTable productData={productData} />;
+  return <ReleaseTable slug={product} productData={productData} />;
 }
